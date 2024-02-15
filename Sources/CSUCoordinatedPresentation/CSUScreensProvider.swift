@@ -7,8 +7,11 @@
 
 import SwiftUI
 
-public protocol CSUScreensProvider: Equatable {
+public protocol CSUScreensProvider {
     associatedtype ScreenView: View
+    associatedtype ScreenType: Equatable
+    
+    var screenType: ScreenType { get }
     
     @ViewBuilder func makeScreen() -> ScreenView
 }

@@ -9,17 +9,18 @@ import SwiftUI
 
 public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where ScreensProvider: CSUScreensProvider {
     typealias NavigationController = CSUCoordinatedNavigationController<ScreensProvider>
+    public typealias DismissCompletion = () -> Void
     
     /// Flag which determines whether presented views should get dismissed by pop action called on coordinated view.
     /// - Warning: Flag works only if the view is in navigation context and it's default value is overriden by `CSUCoordinatedNavigationView` on coordinator creation.
     public var dismissPresentedViewOnViewPop = false
     
-    let creator: ScreensProvider
+    let screenType: ScreensProvider.ScreenType
     private weak var navigationController: NavigationController?
     private weak var ownerVC: UIViewController?
     
-    init(creator: ScreensProvider, navigationController: NavigationController?) {
-        self.creator = creator
+    init(screenType: ScreensProvider.ScreenType, navigationController: NavigationController?) {
+        self.screenType = screenType
         self.navigationController = navigationController
     }
     
@@ -63,10 +64,10 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     
     /// Pops views until the specified view is at the top of the navigation stack.
     /// - Parameters:
-    ///   - provider: Provider of view's ID used as target.
+    ///   - screenID: View's ID used as target.
     ///   - animated: Flag to determine whether transition should get animated.
-    public func navPop(to provider: ScreensProvider, animated: Bool = true) {
-        navigationController?.pop(to: provider, animated: animated)
+    public func navPop(to screenType: ScreensProvider.ScreenType, animated: Bool = true) {
+        navigationController?.pop(to: screenType, animated: animated)
     }
     
     /// Pops all views in navgation stack until root is at top and then replaces it with specified view.
@@ -90,17 +91,19 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         ownerVC?.present(presentedVC, animated: animated)
     }
     
-    /// Dismisses the view that was presented modally by the view. If coordinated view doesn't present any view and it is presented modally then it will be dismissed.
-    /// - Parameters:
-    ///   - alwaysDismissSelf: Flag to determine whether the coordinated view should be dismissed along view modally presented by it. Default FALSE.
-    ///   - animated: Flag to determine whether transition should get animated.
-    public func dismissPresentedViewOrSelf(alwaysDismissSelf: Bool = false, animated: Bool = true) {
-        if let presentationParent = ownerVC?.presentingViewController, alwaysDismissSelf {
-            presentationParent.dismiss(animated: animated)
+    public func dismiss(animated: Bool = true) {
+        if ownerVC?.presentedViewController != nil {
+            ownerVC?.dismiss(animated: animated) { [weak self] in
+                self?.dismiss(animated: animated)
+            }
             return
         }
         
-        ownerVC?.dismiss(animated: animated)
+        if isInNavigationContext {
+            navPopView(animated: animated)
+        } else {
+            ownerVC?.dismiss(animated: animated)
+        }
     }
     
     // MARK: - Internal

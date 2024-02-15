@@ -32,13 +32,13 @@ public final class CSUCoordinatedNavigationController<ScreensProvider>: UINaviga
         pushViewController(hostingVC, animated: animated)
     }
     
-    func pop(to provider: ScreensProvider, animated: Bool) {
+    func pop(to screenType: ScreensProvider.ScreenType, animated: Bool) {
         let target = viewControllers.last {
             guard let coordinated = $0 as? CSUCoordinatedView else { return false }
             
             let coordinator: CSUViewCoordinator<ScreensProvider>? = coordinated.viewCoordinator()
             
-            return coordinator.flatMap { $0.creator == provider } ?? false
+            return coordinator.flatMap { $0.screenType == screenType } ?? false
         }
         
         guard let target else { return }
@@ -57,7 +57,8 @@ public final class CSUCoordinatedNavigationController<ScreensProvider>: UINaviga
         with mode: CSUViewCoordinator<ScreensProvider>.PresentationMode? = nil,
         navigationController: CSUCoordinatedNavigationController<ScreensProvider>?
     ) -> CSUHostingController<some View, ScreensProvider> {
-        let coordinator = CSUViewCoordinator<ScreensProvider>(creator: viewProvider, navigationController: navigationController)
+        let coordinator = CSUViewCoordinator<ScreensProvider>(screenType: viewProvider.screenType,
+                                                              navigationController: navigationController)
         if let dismissFlag = navigationController?.dismissPresentedViewOnViewPop {
             coordinator.dismissPresentedViewOnViewPop = dismissFlag
         }
