@@ -9,11 +9,7 @@ import SwiftUI
 
 public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where ScreensProvider: CSUScreensProvider {
     typealias NavigationController = CSUCoordinatedNavigationController<ScreensProvider>
-    public typealias DismissCompletion = () -> Void
-    
-    /// Flag which determines whether presented views should get dismissed by pop action called on coordinated view.
-    /// - Warning: Flag works only if the view is in navigation context and it's default value is overriden by `CSUCoordinatedNavigationView` on coordinator creation.
-    public var dismissPresentedViewOnViewPop = false
+    public typealias NavigationBarUpdateHandler = (_ navigationBar: UINavigationBar) -> Void
     
     let screenType: ScreensProvider.ScreenType
     private weak var navigationController: NavigationController?
@@ -39,6 +35,14 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     
     /// Accessor of `UINavigationItem` property of view coordinated by coordinator. Returns nil if view is not embeded in navigation, otherwise it returns object.
     public var navigationItem: UINavigationItem? { ownerVC?.navigationController != nil ? ownerVC?.navigationItem : nil }
+    
+    /// Allows update of `UINavigationBar` in underlaying `UINavigationController` if one exists.
+    /// - Parameter handler: Closure responsible for handling update of `UINavigationBar`.
+    public func updateNavigationBar(_ handler: NavigationBarUpdateHandler) {
+        guard let navigationBar = navigationController?.navigationBar else { return }
+        
+        handler(navigationBar)
+    }
     
     // MARK: Navigation
     
@@ -91,6 +95,9 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         ownerVC?.present(presentedVC, animated: animated)
     }
     
+    /// Dismisses current view, and its modal children. either via navigation pop or modal dismiss.
+    /// - Parameter animated: Flag to determine whether transition should get animated.
+    /// - Warning: This method also dismisses any modally presented view!
     public func dismiss(animated: Bool = true) {
         if ownerVC?.presentedViewController != nil {
             ownerVC?.dismiss(animated: animated) { [weak self] in
@@ -110,7 +117,6 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     
     func assignNavigationController(with navigationController: NavigationController) {
         self.navigationController = navigationController
-        self.dismissPresentedViewOnViewPop = navigationController.dismissPresentedViewOnViewPop
     }
     
     func assignOwningController(with viewController: UIViewController) {

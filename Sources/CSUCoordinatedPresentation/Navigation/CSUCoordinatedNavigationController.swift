@@ -7,13 +7,10 @@
 
 import SwiftUI
 
-public final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationController, UINavigationControllerDelegate where ScreensProvider: CSUScreensProvider {
+final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationController, UINavigationControllerDelegate where ScreensProvider: CSUScreensProvider {
     
-    public let dismissPresentedViewOnViewPop: Bool
-    
-    init(rootScreenProvider: ScreensProvider, dismissPresentedViewOnViewPop: Bool) {
+    init(rootScreenProvider: ScreensProvider) {
         let rootVC = Self.makeCoordinatedView(for: rootScreenProvider, navigationController: nil)
-        self.dismissPresentedViewOnViewPop = dismissPresentedViewOnViewPop
         super.init(rootViewController: rootVC)
         
         self.delegate = self
@@ -59,23 +56,10 @@ public final class CSUCoordinatedNavigationController<ScreensProvider>: UINaviga
     ) -> CSUHostingController<some View, ScreensProvider> {
         let coordinator = CSUViewCoordinator<ScreensProvider>(screenType: viewProvider.screenType,
                                                               navigationController: navigationController)
-        if let dismissFlag = navigationController?.dismissPresentedViewOnViewPop {
-            coordinator.dismissPresentedViewOnViewPop = dismissFlag
-        }
-        let coordinatedView = viewProvider.makeScreen().environmentObject(coordinator)
+
+        let coordinatedView = viewProvider.makeScreen()
+            .environmentObject(coordinator)
         
         return CSUHostingController(coordinator: coordinator, root: coordinatedView, presentationMode: mode)
-    }
-    
-    // MARK: - Overrides
-    
-    @discardableResult
-    public override func popViewController(animated: Bool) -> UIViewController? {
-        if let topHost = topViewController as? CSUCoordinatedView,
-           let coordinator: CSUViewCoordinator<ScreensProvider> = topHost.viewCoordinator(), coordinator.dismissPresentedViewOnViewPop {
-            topViewController?.dismiss(animated: false)
-        }
-        
-        return super.popViewController(animated: animated)
     }
 }

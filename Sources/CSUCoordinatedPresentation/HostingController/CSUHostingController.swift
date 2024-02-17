@@ -8,7 +8,7 @@
 import SwiftUI
 
 final class CSUHostingController<Content, ScreensProvider>: UIHostingController<Content>, CSUCoordinatedViewHost, UIViewControllerTransitioningDelegate
-    where Content: View, ScreensProvider: CSUScreensProvider {
+        where Content: View, ScreensProvider: CSUScreensProvider {
     typealias Coordinator = CSUViewCoordinator<ScreensProvider>
     typealias PresentationMode = CSUViewCoordinator<ScreensProvider>.PresentationMode
     
