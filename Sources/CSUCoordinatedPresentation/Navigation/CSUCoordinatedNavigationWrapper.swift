@@ -9,16 +9,18 @@ import SwiftUI
 
 struct CSUCoordinatedNavigationWrapper<ScreenProvider>: UIViewControllerRepresentable where ScreenProvider: CSUScreensProvider {
     private let rootScreenProvider: ScreenProvider
+    private let hideNavBarForRootView: Bool
     
-    init(rootScreenProvider: ScreenProvider) {
+    init(rootScreenProvider: ScreenProvider, hideNavBarForRootView: Bool) {
         self.rootScreenProvider = rootScreenProvider
+        self.hideNavBarForRootView = hideNavBarForRootView
     }
     
     func makeUIViewController(context: Context) -> CSUCoordinatedNavigationController<ScreenProvider> {
         let navigation = CSUCoordinatedNavigationController<ScreenProvider>(
-            rootScreenProvider: rootScreenProvider
+            rootScreenProvider: rootScreenProvider,
+            hideNavBarForRootView: hideNavBarForRootView
         )
-        
         return navigation
     }
     
