@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where ScreensProvider: CSUScreensProvider {
     typealias NavigationController = CSUCoordinatedNavigationController<ScreensProvider>
@@ -32,6 +33,16 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     /// Boolean value indicating whether view is in navigation context.
     public var isInNavigationContext: Bool { ownerVC?.navigationController != nil }
     
+    /// Boolean value indicating whether view of this coordinator is presented modally by other view.
+    public var isPresentedModally: Bool { ownerVC?.presentingViewController != nil }
+    
+    /// Boolean value indicating whether view is still in navigation stack.
+    public var isInNavigationStack: Bool {
+        guard let navigationController, let ownerVC else { return false }
+        
+        return navigationController.viewControllers.contains { $0 === ownerVC }
+    }
+    
     /// Returns the coordinator of modally presented view if one is presented, otherwise it returns nil.
     public var childCoordinator: CSUViewCoordinator<ScreensProvider>? {
         ownerVC?.presentedViewController.flatMap { findCoordinator(of: $0) }
@@ -48,7 +59,7 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     /// Accessor of `UINavigationBar` property of underlaying navigation controller. Returns nil if view is not embeded in navigation, otherwise it returns object.
     public var navigationBar: UINavigationBar? { navigationController?.navigationBar }
     
-    /// Sets UIBarButtonItem as template for back buttons's attachment. E.g set UIBarButtonItem(title: "", style: .plain, target: nil, action: nil) to erase previous view's title nex to backIndicatorImage.
+    /// Sets UIBarButtonItem as template for back buttons's attachment. E.g set UIBarButtonItem(title: "", style: .plain, target: nil, action: nil) to erase previous view's title next to backIndicatorImage.
     /// - Parameter templateFactory: Closure responsible for creating `UIBarButtonItem` object on navigation's push.
     public func setCustomBackButtonAttachment(to templateFactory: @autoclosure @escaping () -> UIBarButtonItem) {
         navigationController?.backButtonAttachmentProvider = UIBarButtonProvider(factory: templateFactory)
@@ -83,6 +94,16 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         navigationController?.pushView(viewProvider: provider, animated: animated, onDismissed: onDismissed)
     }
     
+    /// Pushes the decorated view into navigation stack.
+    /// - Parameters:
+    ///   - provider: Decorated provider of view to push.
+    ///   - animated: Flag to determine whether transition should get animated.
+    ///   - onDismissed: Closure called then view got popped from navigation.
+    public func navPush<DecoratedView>(view provider: CSUScreenViewDecorator<ScreensProvider, DecoratedView>,
+                                       animated: Bool = true, onDismissed: OnDismissed? = nil) where DecoratedView: View {
+        navigationController?.pushView(viewProvider: provider, animated: animated, onDismissed: onDismissed)
+    }
+    
     /// Pops whole navigation stack all the way to the root view.
     /// - Parameter animated: Flag to determine whether transition should get animated.
     public func navPopToRootView(animated: Bool = true) {
@@ -105,6 +126,15 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         navigationController?.replaceRoot(with: provider, animated: animated)
     }
     
+    /// Pops all views in navgation stack until root is at top and then replaces it with specified decorated view.
+    /// - Parameters:
+    ///   - provider: Decorated provider of new root view.
+    ///   - animated: Flag to determine whether transition should get animated.
+    public func navReplaceRoot<DecoratedView>(with provider: CSUScreenViewDecorator<ScreensProvider, DecoratedView>,
+                                              animated: Bool = true) where DecoratedView: View {
+        navigationController?.replaceRoot(with: provider, animated: animated)
+    }
+    
     // MARK: Presentation
     
     /// Presents view modally.
@@ -112,9 +142,24 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     ///   - provider: Provider of view to present.
     ///   - mode: Value used to determine style of presentation.
     ///   - animated: Flag to determine whether transition should get animated.
-    ///   - onDismissed: Closure called then view got dismissed.
+    ///   - onDismissed: Closure called when view got dismissed.
     public func present(view provider: ScreensProvider, with mode: CSUPresentationMode, animated: Bool = true,
                         onDismissed: OnDismissed? = nil) {
+        let presentedVC = NavigationController.makeCoordinatedView(for: provider, with: mode, navigationController: nil)
+        presentedVC.coordinator.setOnDissmissedCallback(onDismissed)
+        
+        ownerVC?.present(presentedVC, animated: animated)
+    }
+    
+    /// Presents decorated view modally.
+    /// - Parameters:
+    ///   - provider: Decorated provider of view to present.
+    ///   - mode: Value used to determine style of presentation.
+    ///   - animated: Flag to determine whether transition should get animated.
+    ///   - onDismissed: Closure called when view got dismissed.
+    public func present<DecoratedView>(view provider: CSUScreenViewDecorator<ScreensProvider, DecoratedView>,
+                                       with mode: CSUPresentationMode,
+                                       animated: Bool = true, onDismissed: OnDismissed? = nil) where DecoratedView: View {
         let presentedVC = NavigationController.makeCoordinatedView(for: provider, with: mode, navigationController: nil)
         presentedVC.coordinator.setOnDissmissedCallback(onDismissed)
         
@@ -127,12 +172,18 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     ///   - mode: Value used to determine style of presentation.
     ///   - hideNavBarForRootView: Flag to hide navigation bar when root view is visible. Default is true.
     ///   - animated: Flag to determine whether transition should get animated.
+    ///   - onDismissed: Closure called when navigation view got dismissed.
     public func presentWithNavigation(view provider: ScreensProvider, with mode: CSUPresentationMode,
                                       hideNavBarForRootView: Bool = true,
-                                      animated: Bool = true) {
+                                      animated: Bool = true,
+                                      onDismissed: OnDismissed? = nil) {
         let presentedVC = CSUCoordinatedNavigationController(rootScreenProvider: provider,
                                                              hideNavBarForRootView: hideNavBarForRootView,
                                                              presentationMode: mode)
+        if let root = presentedVC.viewControllers.first, let rootCoordinator = findCoordinator(of: root) {
+            rootCoordinator.setOnDissmissedCallback(onDismissed)
+        }
+        
         ownerVC?.present(presentedVC, animated: animated)
     }
     

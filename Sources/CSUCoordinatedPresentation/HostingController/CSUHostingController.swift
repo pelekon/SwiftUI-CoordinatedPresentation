@@ -35,6 +35,10 @@ final class CSUHostingController<Content, ScreensProvider>: UIHostingController<
         fatalError("init(coder:) has not been implemented")
     }
     
+    override var description: String {
+        "View of screen: \(coordinator.screenType)"
+    }
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
