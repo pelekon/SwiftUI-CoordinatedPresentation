@@ -8,14 +8,23 @@
 import SwiftUI
 
 public struct CSUCoordinatedNavigationView<ScreenProvider>: View where ScreenProvider: CSUScreensProvider {
-    private let rootScreenProvider: ScreenProvider
+    public typealias InitialConfigurationHandler = (_ coordinator: CSUViewCoordinator<ScreenProvider>) -> Void
     
-    public init(rootScreenProvider: ScreenProvider) {
+    private let rootScreenProvider: ScreenProvider
+    private let hideNavBarForRootView: Bool
+    private let initialConfigurationHandler: InitialConfigurationHandler?
+    
+    public init(rootScreenProvider: ScreenProvider, hideNavBarForRootView: Bool = true,
+                initialConfigurationHandler: InitialConfigurationHandler? = nil) {
         self.rootScreenProvider = rootScreenProvider
+        self.hideNavBarForRootView = hideNavBarForRootView
+        self.initialConfigurationHandler = initialConfigurationHandler
     }
     
     public var body: some View {
-        CSUCoordinatedNavigationWrapper(rootScreenProvider: rootScreenProvider)
+        CSUCoordinatedNavigationWrapper(rootScreenProvider: rootScreenProvider, 
+                                        hideNavBarForRootView: hideNavBarForRootView,
+                                        initialConfigurationHandler: initialConfigurationHandler)
             .ignoresSafeArea()
     }
 }

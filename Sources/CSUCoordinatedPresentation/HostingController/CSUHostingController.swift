@@ -10,20 +10,24 @@ import SwiftUI
 final class CSUHostingController<Content, ScreensProvider>: UIHostingController<Content>, CSUCoordinatedViewHost, UIViewControllerTransitioningDelegate
         where Content: View, ScreensProvider: CSUScreensProvider {
     typealias Coordinator = CSUViewCoordinator<ScreensProvider>
-    typealias PresentationMode = CSUViewCoordinator<ScreensProvider>.PresentationMode
     
     let coordinator: Coordinator
-    let presentationMode: PresentationMode?
+    let presentationMode: CSUPresentationMode?
+    private let hideNavBarWhenViewIsVisible: Bool
+    private let presentationCoordinator: CSUPresentationCoordinator?
     
-    init(coordinator: Coordinator, root: Content, presentationMode: PresentationMode? = nil) {
+    init(coordinator: Coordinator, root: Content, hideNavBarWhenViewIsVisible: Bool,
+         presentationMode: CSUPresentationMode? = nil) {
         self.coordinator = coordinator
+        self.hideNavBarWhenViewIsVisible = hideNavBarWhenViewIsVisible
         self.presentationMode = presentationMode
+        self.presentationCoordinator = presentationMode.flatMap { .init(mode: $0) }
         super.init(rootView: root)
         
         coordinator.assignOwningController(with: self)
-        if presentationMode != nil {
+        if presentationCoordinator != nil {
             self.modalPresentationStyle = .custom
-            self.transitioningDelegate = self
+            self.transitioningDelegate = presentationCoordinator
         }
     }
     
@@ -31,37 +35,43 @@ final class CSUHostingController<Content, ScreensProvider>: UIHostingController<
         fatalError("init(coder:) has not been implemented")
     }
     
+    override var description: String {
+        "View of screen: \(coordinator.screenType)"
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if hideNavBarWhenViewIsVisible {
+            navigationController?.setNavigationBarHidden(true, animated: false)
+        }
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        coordinator.updateIsVisible(true)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        coordinator.updateIsVisible(false)
+        
+        if hideNavBarWhenViewIsVisible {
+            navigationController?.setNavigationBarHidden(false, animated: false)
+        }
+    }
+    
     func viewCoordinator<T>() -> CSUViewCoordinator<T>? where T : CSUScreensProvider {
         return coordinator as? CSUViewCoordinator<T>
     }
     
-    func presentationController(forPresented presented: UIViewController, presenting: UIViewController?,
-                                source: UIViewController) -> UIPresentationController? {
-        guard let presentationMode else { return nil }
+    override func didMove(toParent parent: UIViewController?) {
+        super.didMove(toParent: parent)
         
-        return switch presentationMode {
-        case .sheet:
-            makeSheetPresentationController(configuration: nil, presentedViewController: presented, presenting: source)
-        case let .configuredSheet(configuration):
-            makeSheetPresentationController(configuration: configuration, presentedViewController: presented, presenting: source)
-        case .fullscreenCover:
-            CSUFullScreenCoverPresentationController(presentedViewController: presented, presenting: source)
-        case let .custom(controller):
-            controller
-        }
-    }
-    
-    private func makeSheetPresentationController(configuration: CSUSheetConfiguration?,
-                                                 presentedViewController: UIViewController,
-                                                 presenting: UIViewController?) -> UIPresentationController {
-        if #available(iOS 15, *) {
-            return CSUSheetPresentationController(configuration: configuration,
-                                                  presentedViewController: presentedViewController,
-                                                  presenting: presenting)
-        } else {
-            return CSUPageSheetPresentationController(configuration: configuration,
-                                                      presentedViewController: presentedViewController,
-                                                      presenting: presenting)
+        if let callback = coordinator.onDissmissedCallback, parent == nil && coordinator.isInNavigationContext {
+            callback()
         }
     }
 }

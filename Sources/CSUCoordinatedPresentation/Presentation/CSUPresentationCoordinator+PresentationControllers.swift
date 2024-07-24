@@ -1,5 +1,5 @@
 //
-//  CSUHostingController+PresentationControllers.swift
+//  CSUPresentationCoordinator+PresentationControllers.swift
 //  CoordinatedSwiftUI
 //
 //  Created by Bartłomiej Bukowiecki on 14/01/2024.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-extension CSUHostingController {
+extension CSUPresentationCoordinator {
     final class CSUPageSheetPresentationController: UIPresentationController, UIAdaptivePresentationControllerDelegate {
         let configuration: CSUSheetConfiguration?
         
@@ -46,7 +46,7 @@ extension CSUHostingController {
                 self.detents = detends
             }
             
-            self.prefersGrabberVisible = configuration.flatMap { !$0.isDragIndicatorDisabled } ?? true
+            self.prefersGrabberVisible = configuration.flatMap { !$0.isDragIndicatorDisabled } ?? false
             self.preferredCornerRadius = configuration?.preferedCornerRadius
             presentedViewController.isModalInPresentation = !(configuration.flatMap { $0.canInteractiveDismiss } ?? true)
             if let backgroundColor = configuration?.presentationBackground {
