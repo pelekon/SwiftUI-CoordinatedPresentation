@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
     s.name             = 'CSUCoordinatedPresentation'
-    s.version          = '1.1.0'
+    s.version          = '1.1.1'
     s.summary          = 'Library created to improve navigation and presentation in SwiftUI.'
   
     s.description      = "Library created to improve navigation and presentation in SwiftUI."

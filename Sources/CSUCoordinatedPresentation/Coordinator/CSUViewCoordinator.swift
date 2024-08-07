@@ -16,6 +16,7 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     
     public let screenType: ScreensProvider.ScreenType
     public private(set) var viewIsVisible = false
+    public var adjustsFontSizeOfNavBarTitle = false
     private weak var navigationController: NavigationController?
     private weak var ownerVC: UIViewController?
     private(set) var onDissmissedCallback: OnDismissed?
@@ -51,6 +52,11 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     /// Returns the coordinator of view which modally presented this view if one is presented, otherwise it returns nil.
     public var parentCoordinator: CSUViewCoordinator<ScreensProvider>? {
         ownerVC?.presentingViewController.flatMap { findCoordinator(in: $0) }
+    }
+    
+    /// Returns the coordinator of root view in navigation stack, if one is present.
+    public var navRootCoordinator: CSUViewCoordinator<ScreensProvider>? {
+        navigationController?.viewControllers.first.flatMap { findCoordinator(of: $0) }
     }
     
     /// Accessor of `UINavigationItem` property of view coordinated by coordinator. Returns nil if view is not embeded in navigation, otherwise it returns object.
@@ -106,8 +112,16 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     
     /// Pops whole navigation stack all the way to the root view.
     /// - Parameter animated: Flag to determine whether transition should get animated.
-    public func navPopToRootView(animated: Bool = true) {
+    public func navPopToRootView(animated: Bool = true, completionHandler: DismissCompletion? = nil) {
         navigationController?.popToRootViewController(animated: animated)
+        guard let navigationController, let completionHandler else { return }
+        
+        Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
+            if navigationController.viewControllers.count == 1 {
+                timer.invalidate()
+                completionHandler()
+            }
+        }
     }
     
     /// Pops views until the specified view is at the top of the navigation stack.

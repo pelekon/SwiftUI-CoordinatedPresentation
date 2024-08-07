@@ -51,6 +51,10 @@ final class CSUHostingController<Content, ScreensProvider>: UIHostingController<
         super.viewDidAppear(animated)
         
         coordinator.updateIsVisible(true)
+        
+        if coordinator.adjustsFontSizeOfNavBarTitle, let title = navigationItem.title {
+            navigationController?.navigationBar.findTitleLabel(with: title)?.adjustsFontSizeToFitWidth = true
+        }
     }
     
     override func viewWillDisappear(_ animated: Bool) {

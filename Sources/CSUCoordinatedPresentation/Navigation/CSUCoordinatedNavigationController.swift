@@ -37,6 +37,14 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func setNavigationBarHidden(_ hidden: Bool, animated: Bool) {
+        // [Bug] IOS 15.8 sets this flag as false somehwere between VC's lifecycle events: viewWillAppear and viewDidAppear.
+        // Additionally UITabBarController does same thing on tab change.
+        if hideNavBarForRootView && !hidden && viewControllers.count == 1 { return }
+        
+        super.setNavigationBarHidden(hidden, animated: animated)
+    }
+    
     // MARK: - Coordination
     
     func pushView(viewProvider: ScreensProvider, animated: Bool, onDismissed: (() -> Void)?) {
@@ -100,6 +108,7 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
                                                               navigationController: navigationController)
 
         let coordinatedView = viewProvider.makeScreen()
+            .modifier(viewProvider.viewsModifier)
             .environmentObject(coordinator)
         
         return CSUHostingController(coordinator: coordinator, root: coordinatedView,
@@ -116,6 +125,7 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
                                                               navigationController: navigationController)
 
         let coordinatedView = viewProvider.makeScreen()
+            .modifier(viewProvider.viewsModifier)
             .environmentObject(coordinator)
         
         return CSUHostingController(coordinator: coordinator, root: coordinatedView,
