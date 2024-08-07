@@ -17,6 +17,7 @@ public struct CSUScreenViewDecorator<ScreenProvider, DecoratedView>: CSUScreensP
     }
     
     public var screenType: ScreenProvider.ScreenType { root.screenType }
+    public var viewsModifier: ScreenProvider.NavigationViewModifier { root.viewsModifier }
     
     public func makeScreen() -> some View {
         decorator(root.makeScreen())

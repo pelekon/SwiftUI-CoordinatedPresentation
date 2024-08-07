@@ -8,19 +8,19 @@
 import SwiftUI
 
 extension UINavigationBar {
-    public func findTitleLabel(with title: String, maxSearchDeep: Int = 2) -> UILabel? {
-        findTitleLabel(in: self, for: title, maxDeep: maxSearchDeep, current: 0)
+    public func findTitleLabel(with title: String, maxSearchDepth: Int = 2) -> UILabel? {
+        findTitleLabel(in: self, for: title, maxDepth: maxSearchDepth, current: 0)
     }
     
-    private func findTitleLabel(in navBar: UIView, for title: String, maxDeep: Int, current: Int) -> UILabel? {
-        guard current <= maxDeep else { return nil }
+    private func findTitleLabel(in navBar: UIView, for title: String, maxDepth: Int, current: Int) -> UILabel? {
+        guard current <= maxDepth else { return nil }
         
         for child in navBar.subviews {
-            if let label = child as? UILabel, label.text == title {
+            if let label = child as? UILabel, !label.isHidden && label.text == title {
                 return label
             }
             
-            if let childLabel = findTitleLabel(in: child, for: title, maxDeep: maxDeep, current: current + 1) {
+            if let childLabel = findTitleLabel(in: child, for: title, maxDepth: maxDepth, current: current + 1) {
                 return childLabel
             }
         }
