@@ -46,7 +46,7 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     
     /// Returns the coordinator of modally presented view if one is presented, otherwise it returns nil.
     public var childCoordinator: CSUViewCoordinator<ScreensProvider>? {
-        ownerVC?.presentedViewController.flatMap { findCoordinator(of: $0) }
+        ownerVC?.presentedViewController.flatMap { findCoordinator(in: $0) }
     }
     
     /// Returns the coordinator of view which modally presented this view if one is presented, otherwise it returns nil.
@@ -199,6 +199,15 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         }
         
         ownerVC?.present(presentedVC, animated: animated)
+    }
+    
+    /// Presents not coordinated ``UIViewController``.
+    /// - Warning: This method should be used only as last possible solution.
+    /// - Parameters:
+    ///     - viewController: ViewController to be presented.
+    ///     - animated: Flag to determine whether transition should get animated.
+    public func present(notCoordinated viewController: UIViewController, animated: Bool = true) {
+        ownerVC?.present(viewController, animated: animated)
     }
     
     /// Dismisses current view, and its modal children. either via navigation pop or modal dismiss.
