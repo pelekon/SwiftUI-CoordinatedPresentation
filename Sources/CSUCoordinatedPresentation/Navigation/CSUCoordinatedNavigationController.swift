@@ -11,13 +11,16 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
     private let presentationCoordinator: CSUPresentationCoordinator?
     private let hideNavBarForRootView: Bool
     var backButtonAttachmentProvider: (any BarItemProvider)?
+    private var onVisibleScreenChanged: CSUCoordinatedNavigationView<ScreensProvider>.OnScreenChangedHandler?
     
     init(rootScreenProvider: ScreensProvider, hideNavBarForRootView: Bool, presentationMode: CSUPresentationMode? = nil,
-         initialConfigurationHandler: CSUCoordinatedNavigationView<ScreensProvider>.InitialConfigurationHandler? = nil) {
+         initialConfigurationHandler: CSUCoordinatedNavigationView<ScreensProvider>.InitialConfigurationHandler? = nil,
+         onVisibleScreenChanged: CSUCoordinatedNavigationView<ScreensProvider>.OnScreenChangedHandler? = nil) {
         let rootVC = Self.makeCoordinatedView(for: rootScreenProvider, hideNavBarWhenViewIsVisible: hideNavBarForRootView,
                                               navigationController: nil)
         self.presentationCoordinator = presentationMode.flatMap { .init(mode: $0) }
         self.hideNavBarForRootView = hideNavBarForRootView
+        self.onVisibleScreenChanged = onVisibleScreenChanged
         super.init(rootViewController: rootVC)
         
         self.delegate = self
@@ -43,6 +46,20 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
         if hideNavBarForRootView && !hidden && viewControllers.count == 1 { return }
         
         super.setNavigationBarHidden(hidden, animated: animated)
+    }
+    
+    func updateOnVisibleScreenChanged(to handler: CSUCoordinatedNavigationView<ScreensProvider>.OnScreenChangedHandler?) {
+        self.onVisibleScreenChanged = handler
+    }
+    
+    func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
+        guard let presentedHost = viewController as? CSUCoordinatedView else { return }
+        
+        guard let childCoordinator: CSUViewCoordinator<ScreensProvider> = presentedHost.viewCoordinator() else {
+            fatalError("Found child with coordinator with different ScreenProvider, such behaviour is not permitted!")
+        }
+        
+        onVisibleScreenChanged?(childCoordinator.screenType)
     }
     
     // MARK: - Coordination
