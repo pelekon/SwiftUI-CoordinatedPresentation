@@ -83,6 +83,12 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
             .first
     }
     
+    /// Looks for coordinator of specified type in children of current view.
+    /// - Returns: First coordinator from children which matches given type.
+    public func findCoordinatorInChildren<T: CSUScreensProvider>() -> CSUViewCoordinator<T>? {
+        return ownerVC?.children.compactMap { findCoordinator(in: $0) }.first
+    }
+    
     // MARK: Navigation
     
     /// Pops the top view controller from the navigation stack.
@@ -194,7 +200,8 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         let presentedVC = CSUCoordinatedNavigationController(rootScreenProvider: provider,
                                                              hideNavBarForRootView: hideNavBarForRootView,
                                                              presentationMode: mode)
-        if let root = presentedVC.viewControllers.first, let rootCoordinator = findCoordinator(of: root) {
+        if let root = presentedVC.viewControllers.first,
+           let rootCoordinator: CSUViewCoordinator<ScreensProvider> = findCoordinator(of: root) {
             rootCoordinator.setOnDissmissedCallback(onDismissed)
         }
         
@@ -255,22 +262,22 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         self.onDissmissedCallback = callback
     }
     
-    private func findCoordinator(of presentedVC: UIViewController) -> CSUViewCoordinator<ScreensProvider>? {
+    private func findCoordinator<T: CSUScreensProvider>(of presentedVC: UIViewController) -> CSUViewCoordinator<T>? {
         guard let presentedHost = presentedVC as? CSUCoordinatedView else { return nil }
         
-        guard let childCoordinator: CSUViewCoordinator<ScreensProvider> = presentedHost.viewCoordinator() else {
-            fatalError("Found child with coordinator with different ScreenProvider, such behaviour is not permitted!")
-        }
+        guard let childCoordinator: CSUViewCoordinator<T> = presentedHost.viewCoordinator() else { return nil }
         
         return childCoordinator
     }
     
-    private func findCoordinator(in viewController: UIViewController) -> CSUViewCoordinator<ScreensProvider>? {
-        if let navVC = viewController as? CSUCoordinatedNavigationController<ScreensProvider> {
+    private func findCoordinator<T: CSUScreensProvider>(
+        in viewController: UIViewController
+    ) -> CSUViewCoordinator<T>? {
+        if let navVC = viewController as? CSUCoordinatedNavigationController<T> {
             return navVC.topViewController.flatMap { findCoordinator(of: $0) }
         } else if let coordinatedVC = viewController as? (any CSUCoordinatedView) {
             return coordinatedVC.viewCoordinator()
-        } else if let hostedNavVC = viewController.children.first as? CSUCoordinatedNavigationController<ScreensProvider> {
+        } else if let hostedNavVC = viewController.children.first as? CSUCoordinatedNavigationController<T> {
             return hostedNavVC.topViewController.flatMap { findCoordinator(of: $0) }
         } else if let hostedCoordinatedVC = viewController.children.first as? (any CSUCoordinatedView) {
             return hostedCoordinatedVC.viewCoordinator()
