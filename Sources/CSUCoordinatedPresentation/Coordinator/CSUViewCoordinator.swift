@@ -44,6 +44,15 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         return navigationController.viewControllers.contains { $0 === ownerVC }
     }
     
+    /// Checks if given screen is in current navigation's stack.
+    /// - Parameter screenType: Type of screen to look for.
+    /// - Returns: Boolean value indicating whether screen is in stack.
+    public func hasScreenInNavigationStack(screenType: ScreensProvider.ScreenType) -> Bool {
+        guard let navigationController else { return false }
+        
+        return navigationController.containsScreen(of: screenType)
+    }
+    
     /// Returns the coordinator of modally presented view if one is presented, otherwise it returns nil.
     public var childCoordinator: CSUViewCoordinator<ScreensProvider>? {
         ownerVC?.presentedViewController.flatMap { findCoordinator(in: $0) }
@@ -155,6 +164,15 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         navigationController?.replaceRoot(with: provider, animated: animated)
     }
     
+    /// Replaces last view of given type, in navigation stack, with new view.
+    /// - Parameters:
+    ///   - type: Screen type of view to be replaced.
+    ///   - provider: Provider of new view.
+    ///   - animated: Flag to determine whether transition should get animated.
+    public func navReplaceScreen(of type: ScreensProvider.ScreenType, with provider: ScreensProvider, animated: Bool = true) {
+        navigationController?.replace(screen: type, with: provider, animated: animated)
+    }
+    
     // MARK: Presentation
     
     /// Presents view modally.
@@ -191,14 +209,17 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     ///   - provider: Provider of view to present.
     ///   - mode: Value used to determine style of presentation.
     ///   - hideNavBarForRootView: Flag to hide navigation bar when root view is visible. Default is true.
+    ///   - additionalSafeArea: Insets to apply as additional safe area for navigation's view.
     ///   - animated: Flag to determine whether transition should get animated.
     ///   - onDismissed: Closure called when navigation view got dismissed.
     public func presentWithNavigation(view provider: ScreensProvider, with mode: CSUPresentationMode,
                                       hideNavBarForRootView: Bool = true,
+                                      additionalSafeArea: UIEdgeInsets? = nil,
                                       animated: Bool = true,
                                       onDismissed: OnDismissed? = nil) {
         let presentedVC = CSUCoordinatedNavigationController(rootScreenProvider: provider,
                                                              hideNavBarForRootView: hideNavBarForRootView,
+                                                             additionalSafeArea: additionalSafeArea,
                                                              presentationMode: mode)
         if let root = presentedVC.viewControllers.first,
            let rootCoordinator: CSUViewCoordinator<ScreensProvider> = findCoordinator(of: root) {

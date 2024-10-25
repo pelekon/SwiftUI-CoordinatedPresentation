@@ -10,16 +10,19 @@ import SwiftUI
 final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationController, UINavigationControllerDelegate where ScreensProvider: CSUScreensProvider {
     private let presentationCoordinator: CSUPresentationCoordinator?
     private let hideNavBarForRootView: Bool
+    private let additionalSafeArea: UIEdgeInsets?
     var backButtonAttachmentProvider: (any BarItemProvider)?
     private var onVisibleScreenChanged: CSUCoordinatedNavigationView<ScreensProvider>.OnScreenChangedHandler?
     
-    init(rootScreenProvider: ScreensProvider, hideNavBarForRootView: Bool, presentationMode: CSUPresentationMode? = nil,
+    init(rootScreenProvider: ScreensProvider, hideNavBarForRootView: Bool, additionalSafeArea: UIEdgeInsets?,
+         presentationMode: CSUPresentationMode? = nil,
          initialConfigurationHandler: CSUCoordinatedNavigationView<ScreensProvider>.InitialConfigurationHandler? = nil,
          onVisibleScreenChanged: CSUCoordinatedNavigationView<ScreensProvider>.OnScreenChangedHandler? = nil) {
         let rootVC = Self.makeCoordinatedView(for: rootScreenProvider, hideNavBarWhenViewIsVisible: hideNavBarForRootView,
                                               navigationController: nil)
         self.presentationCoordinator = presentationMode.flatMap { .init(mode: $0) }
         self.hideNavBarForRootView = hideNavBarForRootView
+        self.additionalSafeArea = additionalSafeArea
         self.onVisibleScreenChanged = onVisibleScreenChanged
         super.init(rootViewController: rootVC)
         
@@ -38,6 +41,15 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
     
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if let additionalSafeArea {
+            self.additionalSafeAreaInsets = additionalSafeArea
+            self.viewSafeAreaInsetsDidChange()
+        }
     }
     
     override func setNavigationBarHidden(_ hidden: Bool, animated: Bool) {
@@ -98,6 +110,35 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
         guard let target else { return }
         
         popToViewController(target, animated: animated)
+    }
+    
+    func containsScreen(of type: ScreensProvider.ScreenType) -> Bool {
+        var found = false
+        for vc in viewControllers {
+            guard let coordinated = vc as? CSUCoordinatedView,
+                  let coordinator: CSUViewCoordinator<ScreensProvider> = coordinated.viewCoordinator() else { continue }
+            
+            if coordinator.screenType == type {
+                found = true
+                break
+            }
+        }
+        return found
+    }
+    
+    func replace(screen: ScreensProvider.ScreenType, with provider: ScreensProvider, animated: Bool) {
+        let targetIndex = viewControllers.lastIndex {
+            guard let coordinated = $0 as? CSUCoordinatedView,
+                  let coordinator: CSUViewCoordinator<ScreensProvider> = coordinated.viewCoordinator() else { return false }
+            
+            return coordinator.screenType == screen
+        }
+        guard let targetIndex else { return }
+        
+        var controllers = viewControllers
+        controllers[targetIndex] = Self.makeCoordinatedView(for: provider, hideNavBarWhenViewIsVisible: hideNavBarForRootView,
+                                                            navigationController: self)
+        setViewControllers(controllers, animated: animated)
     }
     
     func replaceRoot(with provider: ScreensProvider, animated: Bool) {
