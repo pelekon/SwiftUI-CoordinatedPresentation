@@ -13,6 +13,7 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
     private let additionalSafeArea: UIEdgeInsets?
     var backButtonAttachmentProvider: (any BarItemProvider)?
     private var onVisibleScreenChanged: CSUCoordinatedNavigationView<ScreensProvider>.OnScreenChangedHandler?
+    private(set) var layerMask: CSUNavigationViewLayerMask?
     
     init(rootScreenProvider: ScreensProvider, hideNavBarForRootView: Bool, additionalSafeArea: UIEdgeInsets?,
          presentationMode: CSUPresentationMode? = nil,
@@ -39,6 +40,10 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
         }
     }
     
+    func updateLayerMask(to newMask: CSUNavigationViewLayerMask?) {
+        self.layerMask = newMask
+    }
+    
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -50,6 +55,17 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
             self.additionalSafeAreaInsets = additionalSafeArea
             self.viewSafeAreaInsetsDidChange()
         }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        guard let layerMask else {
+            self.view.layer.mask = nil
+            return
+        }
+        
+        self.view.layer.mask = layerMask.toShapeLayer(for: view)
     }
     
     override func setNavigationBarHidden(_ hidden: Bool, animated: Bool) {

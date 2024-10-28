@@ -38,5 +38,8 @@ struct CSUCoordinatedNavigationWrapper<ScreenProvider>: UIViewControllerRepresen
     
     func updateUIViewController(_ uiViewController: CSUCoordinatedNavigationController<ScreenProvider>, context: Context) {
         uiViewController.updateOnVisibleScreenChanged(to: onVisibleScreenChanged)
+        if context.environment.csuNavigationLayerMask != uiViewController.layerMask {
+            uiViewController.updateLayerMask(to: context.environment.csuNavigationLayerMask)
+        }
     }
 }
