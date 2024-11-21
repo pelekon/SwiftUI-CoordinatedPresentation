@@ -292,18 +292,19 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     }
     
     private func findCoordinator<T: CSUScreensProvider>(
-        in viewController: UIViewController
+        in viewController: UIViewController,
+        depth: Int = 2
     ) -> CSUViewCoordinator<T>? {
         if let navVC = viewController as? CSUCoordinatedNavigationController<T> {
             return navVC.topViewController.flatMap { findCoordinator(of: $0) }
         } else if let coordinatedVC = viewController as? (any CSUCoordinatedView) {
             return coordinatedVC.viewCoordinator()
-        } else if let hostedNavVC = viewController.children.first as? CSUCoordinatedNavigationController<T> {
-            return hostedNavVC.topViewController.flatMap { findCoordinator(of: $0) }
-        } else if let hostedCoordinatedVC = viewController.children.first as? (any CSUCoordinatedView) {
-            return hostedCoordinatedVC.viewCoordinator()
         }
         
-        return nil
+        guard depth != 0 else { return nil }
+        
+        return viewController.children.compactMap {
+            findCoordinator(in: $0, depth: depth - 1)
+        }.first
     }
 }
