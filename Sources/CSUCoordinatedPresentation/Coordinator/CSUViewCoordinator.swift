@@ -98,6 +98,15 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         return ownerVC?.children.compactMap { findCoordinator(in: $0) }.first
     }
     
+    /// Looks for coordinator of specified type in parents of current view.
+    /// - Parameter depth: Amount dictating how deep in hierarcy search will look for.
+    /// - Returns: First coordinator from parents which matches given type.
+    public func findParentCoordinator<T: CSUScreensProvider>(depth: Int = 2) -> CSUViewCoordinator<T>? {
+        guard let ownerVC else { return nil }
+        
+        return findParentCoordinator(in: ownerVC, depth: depth)
+    }
+    
     // MARK: Navigation
     
     /// Pops the top view controller from the navigation stack.
@@ -306,5 +315,23 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         return viewController.children.compactMap {
             findCoordinator(in: $0, depth: depth - 1)
         }.first
+    }
+    
+    private func findParentCoordinator<T: CSUScreensProvider>(
+        in viewController: UIViewController,
+        depth: Int = 2
+    ) -> CSUViewCoordinator<T>? {
+        if let navVC = viewController as? CSUCoordinatedNavigationController<T> {
+            return navVC.topViewController.flatMap { findCoordinator(of: $0) }
+        } else if let coordinatedVC = viewController as? (any CSUCoordinatedView),
+                  let coordinator: CSUViewCoordinator<T> = coordinatedVC.viewCoordinator() {
+            return coordinator
+        }
+        
+        guard depth != 0 else { return nil }
+        
+        return viewController.parent.flatMap {
+            findParentCoordinator(in: $0, depth: depth - 1)
+        }
     }
 }
