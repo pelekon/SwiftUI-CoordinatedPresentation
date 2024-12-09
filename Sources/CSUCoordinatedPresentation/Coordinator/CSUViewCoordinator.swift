@@ -102,9 +102,9 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     /// - Parameter depth: Amount dictating how deep in hierarcy search will look for.
     /// - Returns: First coordinator from parents which matches given type.
     public func findParentCoordinator<T: CSUScreensProvider>(depth: Int = 2) -> CSUViewCoordinator<T>? {
-        guard let ownerVC else { return nil }
+        guard let parentVC = ownerVC?.parent else { return nil }
         
-        return findParentCoordinator(in: ownerVC, depth: depth)
+        return findParentCoordinator(in: parentVC, depth: depth)
     }
     
     // MARK: Navigation
