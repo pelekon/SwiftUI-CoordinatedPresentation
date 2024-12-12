@@ -67,6 +67,15 @@ final class CSUHostingController<Content, ScreensProvider>: UIHostingController<
         }
     }
     
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        
+        if let callback = coordinator.onDissmissedCallback {
+            callback()
+            coordinator.setOnDissmissedCallback(nil)
+        }
+    }
+    
     func viewCoordinator<T>() -> CSUViewCoordinator<T>? where T : CSUScreensProvider {
         return coordinator as? CSUViewCoordinator<T>
     }

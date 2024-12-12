@@ -266,17 +266,21 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         }
         
         guard isInNavigationContext else {
-            ownerVC?.dismiss(animated: animated) { [onDissmissedCallback] in
+            ownerVC?.dismiss(animated: animated) { [weak self] in
                 completionHandler?()
-                onDissmissedCallback?()
+                self?.callDismissCallback()
             }
             return
         }
         
         if let navigationController, navigationController.presentingViewController != nil && navigationController.viewControllers.count == 1 {
-            navigationController.dismiss(animated: animated, completion: completionHandler)
+            navigationController.dismiss(animated: animated, completion: { [weak self] in
+                self?.callDismissCallback()
+                completionHandler?()
+            })
         } else {
             navPopView(animated: animated)
+            callDismissCallback()
             completionHandler?()
         }
     }
@@ -297,6 +301,13 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
     
     func setOnDissmissedCallback(_ callback: OnDismissed?) {
         self.onDissmissedCallback = callback
+    }
+    
+    // MARK: Privates
+    
+    private func callDismissCallback() {
+        onDissmissedCallback?()
+        onDissmissedCallback = nil
     }
     
     private func findCoordinator<T: CSUScreensProvider>(of presentedVC: UIViewController) -> CSUViewCoordinator<T>? {
