@@ -44,6 +44,13 @@ public final class CSUViewCoordinator<ScreensProvider>: ObservableObject where S
         return navigationController.viewControllers.contains { $0 === ownerVC }
     }
     
+    /// Boolean value indicating whether underlaying navigation is changing top view.
+    public var isNavigationDuringTransition: Bool {
+        guard let navigationController else { return false }
+        
+        return navigationController.isDuringTopViewChange
+    }
+    
     /// Checks if given screen is in current navigation's stack.
     /// - Parameter screenType: Type of screen to look for.
     /// - Returns: Boolean value indicating whether screen is in stack.

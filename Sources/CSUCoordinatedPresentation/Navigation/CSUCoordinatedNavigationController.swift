@@ -14,6 +14,7 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
     var backButtonAttachmentProvider: (any BarItemProvider)?
     private var onVisibleScreenChanged: CSUCoordinatedNavigationView<ScreensProvider>.OnScreenChangedHandler?
     private(set) var layerMask: CSUNavigationViewLayerMask?
+    private(set) var isDuringTopViewChange = false
     
     init(rootScreenProvider: ScreensProvider, hideNavBarForRootView: Bool, additionalSafeArea: UIEdgeInsets?,
          presentationMode: CSUPresentationMode? = nil,
@@ -80,7 +81,14 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
         self.onVisibleScreenChanged = handler
     }
     
+    func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController,
+                              animated: Bool) {
+        isDuringTopViewChange = true
+    }
+    
     func navigationController(_ navigationController: UINavigationController, didShow viewController: UIViewController, animated: Bool) {
+        isDuringTopViewChange = false
+        
         guard let presentedHost = viewController as? CSUCoordinatedView else { return }
         
         guard let childCoordinator: CSUViewCoordinator<ScreensProvider> = presentedHost.viewCoordinator() else {
