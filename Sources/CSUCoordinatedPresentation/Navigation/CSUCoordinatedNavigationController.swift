@@ -95,7 +95,9 @@ final class CSUCoordinatedNavigationController<ScreensProvider>: UINavigationCon
             fatalError("Found child with coordinator with different ScreenProvider, such behaviour is not permitted!")
         }
         
-        onVisibleScreenChanged?(childCoordinator.screenType)
+        DispatchQueue.main.async { [onVisibleScreenChanged] in
+            onVisibleScreenChanged?(childCoordinator.screenType)
+        }
     }
     
     // MARK: - Coordination
